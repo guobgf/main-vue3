@@ -1,8 +1,14 @@
 <script setup>
-import {ref} from "vue";
-import router from "@/router/index.js";
+import {getCurrentInstance, ref} from "vue";
+import {useRouter} from "vue-router";
+import microApp from "@micro-zoe/micro-app";
+import loginApi from "@/api/loginApi.js";
 
 const activeIndex = ref()
+const router = useRouter()
+const globalData = microApp.getGlobalData()
+const {proxy} = getCurrentInstance()
+
 const handleSelect = (e) => {
   switch (e) {
     case 'home':
@@ -27,6 +33,20 @@ const handleSelect = (e) => {
       break;
   }
 }
+
+const logout = () => {
+  loginApi.logout({})
+      .then(res => {
+        const {success, message} = res;
+        if (success) {
+          microApp.clearGlobalData()
+          proxy.$message.success("退出成功")
+          router.go(0)
+        } else {
+          proxy.$message.success(message)
+        }
+      })
+}
 </script>
 
 <template>
@@ -44,7 +64,12 @@ const handleSelect = (e) => {
       <el-menu-item index="job">找工作</el-menu-item>
       <el-menu-item index="enterprise">找企业</el-menu-item>
       <el-menu-item index="about">关于我们</el-menu-item>
-      <el-button round plain size="small" class="login-btn" @click="()=>router.push({name:'login'})">登录</el-button>
+      <el-button round plain size="small" v-if="!globalData || !globalData.token" class="login-btn"
+                 @click="()=>router.push({name:'login'})">登录
+      </el-button>
+      <el-button round plain size="small" v-if="globalData && globalData.token" class="login-btn"
+                 @click="logout">退出
+      </el-button>
     </el-menu>
   </div>
 </template>
